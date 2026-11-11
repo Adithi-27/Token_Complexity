@@ -71,7 +71,7 @@ policies:                          # planning.md, steps 11-12 (tok_exam/policies
   predictor: tier+text             # which step-10 predictor P3 and P4 use; best one goes here
   # also run these policies once per predictor ("P3_knapsack@icl"), for predictors that exist
   predictor_policies: [P3_knapsack, P3_knapsack+roll, P7_shadow]
-  compare_predictors: [tier, tier+text, embed, knn, self, probe, icl, icl_raw]
+  compare_predictors: [tier, tier+text, embed, knn, self, probe, icl, icl_raw, icl+text]   # icl+text: exploratory, 11 Nov
 
 bandit:                            # planning.md, step 13 (tok_exam/bandit.py)
   dir: outputs/bandit
@@ -84,8 +84,10 @@ bandit:                            # planning.md, step 13 (tok_exam/bandit.py)
 
 selfalloc:                         # planning.md, step 11 P5 (tok_exam/selfalloc.py)
   dir: outputs/selfalloc
-  n_papers: 20                     # first 20 test papers
-  n_samples: 2
+  n_papers: 100                    # all test papers (the 20 x 2 pilot of 11 Nov is kept as test_20papers_2samples.jsonl)
+  n_samples: 4                     # same as the replay policies
+  chunk_papers: 10                 # runs are written per chunk of papers, so a job can resume
+  compare_policies: [P0_equal, P2_ratio, P3_knapsack+roll, P6_icl_paper, P7_shadow+roll, oracle, oracle_hindsight]
   budgets: [2048, 4096, 8192, 16384]   # paper prompt + 16k thinking fits in 32k context
   max_model_len: 32768             # Qwen2.5-32B native context, for this stage only
   answer_tokens: 1024              # room for the 20 boxed answers
@@ -125,6 +127,22 @@ latency:                           # wall clock per paper at batch size 1 (tok_e
   n_papers: 3                      # first 3 test papers, measured for real
   budget: 16384
   policies: [P0_equal, P2_ratio, P3_knapsack+roll, P7_shadow+roll]
+
+ablations:                         # planning.md, step 14 (tok_exam/ablations.py)
+  dir: outputs/ablations
+  n_papers: 100
+  seed: 20261111                   # same redraw for every variant
+  policies: [P0_equal, P1_in_order, P2_ratio, P3_knapsack+roll, P7_shadow+roll, oracle, oracle_hindsight]
+  variants:
+    default: {}
+    equal_marks: {marks: {easy: 1, moderate: 1, hard: 1}}
+    easy_heavy: {composition: {easy: 14, moderate: 4, hard: 2}}
+    hard_heavy: {composition: {easy: 4, moderate: 6, hard: 10}}
+    size_10: {composition: {easy: 5, moderate: 3, hard: 2}, budget_scale: 0.5}
+    size_40: {composition: {easy: 20, moderate: 12, hard: 8}, budget_scale: 2}
+    # wrong gold (a): 288, 649, 749; ambiguous (b): 380, 552, 835, 962, 1074 (agents/gsm8k_check.md)
+    gsm8k_clean: {exclude: [gsm8k-288, gsm8k-649, gsm8k-749, gsm8k-380, gsm8k-552, gsm8k-835, gsm8k-962, gsm8k-1074]}
+  cost_policies: [P3_knapsack+roll@probe, P3_knapsack+roll@self, P3_knapsack+roll@icl, P3_knapsack+roll@all]
 
 stats:                             # two-level paired bootstrap (tok_exam/stats.py)
   dir: outputs/stats

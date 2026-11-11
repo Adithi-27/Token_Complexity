@@ -153,8 +153,11 @@ def main():
             rows += [{"policy": name, "budget": B, "paper_id": paper["paper_id"], **r}
                      for paper, r in zip(papers, res)]
             sc = [r["score"] for r in res]
+            marks = float(np.mean([r["score"] * total_marks(p) / 100 for p, r in zip(papers, res)]))
             summary[name][B] = {
                 "score_mean": float(np.mean(sc)), "score_std": float(np.std(sc)),
+                # thinking tokens per mark scored (mean thinking / mean marks per paper)
+                "tokens_per_mark": float(np.mean([r["thinking"] for r in res])) / marks if marks else None,
                 "thinking_mean": float(np.mean([r["thinking"] for r in res])),
                 "tokens_mean": float(np.mean([r["tokens"] for r in res])),
                 "thinking_by_tier": {t: float(np.mean([r["thinking_by_tier"][t] for r in res]))

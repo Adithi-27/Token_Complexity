@@ -180,13 +180,13 @@ Token Complexity/
 - [x] Prompt and grader tested
 - [x] Papers sampled
 - [x] Full-budget generations done (4 samples)
-- [ ] Budget curves computed
-- [ ] Needed budget per question; tier overlap plot
-- [ ] Difficulty predictors scored
-- [ ] Policies P0–P5 and oracle evaluated
-- [ ] Bandit trained and evaluated
-- [ ] Ablations done
-- [ ] Table, plots, report and slides written
+- [x] Budget curves computed
+- [x] Needed budget per question; tier overlap plot
+- [x] Difficulty predictors scored
+- [x] Policies P0–P7 and oracles evaluated
+- [x] Bandit trained and evaluated (out-of-fold context, 10 Nov)
+- [x] Ablations done (11 Nov, tok_exam/ablations.py: marks, mix, size, predictor cost, GSM8K-cleaned)
+- [x] Table, plots and report written (11 Nov); slides drafted (reports/slides.tex, 11 Nov), to finish after the 15 Nov freeze
 - [x] Pre-project report written
 - [x] Rollover variant of the plan policies
 - [x] ICL module (P6, icl predictors, controls) and valid/invalid thinking module written and tested
@@ -194,7 +194,7 @@ Token Complexity/
 - [x] GPU pipeline job 65019: curves -> ICL -> probe (done 9 Nov, 4h10m); CPU stages bandit/evaluate/valid/plots/stats rerun on real curves
 - [x] P4 fix: P4_triage_closed (10 Nov; recovers 52.8 -> 84.2 @64k, still < P3)
 - [x] Review fixes (10 Nov): submit_tc.sh stage args, P0 fill, P4 predictor cost, out-of-fold train curves, valid.py check tokens, realbudget prefix encoding; 57 tests
-- [ ] P5 selfalloc + realbudget on GPU (queued 10 Nov, waiting for a QOS slot)
-- [ ] GSM8K label decision
-- [ ] ICL GPU run
-- [ ] Valid/invalid analysis on real curves
+- [x] P5 selfalloc (65152), realbudget (65153), latency (65154): done 11 Nov. P5 beats every replay policy at 8k-16k by compressing (~400 tokens/question); truncation matches a budget-aware prompt within 1.4 points; 19.9 tok/s at batch 1
+- [x] GSM8K label decision: course report keeps raw labels + cleaned redraw (option A); ICML fixes labels (option B), steps in the report
+- [x] ICL GPU run (job 65019)
+- [x] Valid/invalid analysis on real curves

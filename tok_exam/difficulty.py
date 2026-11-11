@@ -174,14 +174,36 @@ def evaluate(pred, acc, threshold):
             "spearman": None if np.isnan(rho) else float(rho)}
 
 
-def knn_curves(E, acc, train, k):
-    """Mean accuracy curve of the k most cosine-similar train questions (never itself)."""
+def knn_neighbours(E, train, k):
+    """[n, k] indices of the k most cosine-similar train questions (never the question itself)."""
     Z = E / np.linalg.norm(E, axis=1, keepdims=True)
     tr = np.where(train)[0]
     sims = Z @ Z[tr].T
     sims[tr, np.arange(len(tr))] = -np.inf       # a train question is not its own neighbour
-    nn = tr[np.argsort(-sims, axis=1)[:, :k]]
-    return acc[nn].mean(axis=1)
+    return tr[np.argsort(-sims, axis=1)[:, :k]]
+
+
+def knn_curves(E, acc, train, k):
+    """Mean accuracy curve of the k most cosine-similar train questions (never itself)."""
+    return acc[knn_neighbours(E, train, k)].mean(axis=1)
+
+
+def knn_majority_bins(E, bins, train, k):
+    """Label-level ICL control: the most common needed bin among the k neighbours
+    (ties go to the smaller bin)."""
+    nn = knn_neighbours(E, train, k)
+    n_bins = int(bins.max()) + 1
+    return np.array([np.bincount(bins[row], minlength=n_bins).argmax() for row in nn])
+
+
+def bin_metrics(true_bin, pred_bin):
+    """Exact, within-one and Spearman agreement of two needed-bin vectors."""
+    from scipy.stats import spearmanr
+
+    rho = spearmanr(true_bin, pred_bin).statistic
+    return {"bin_acc": float((true_bin == pred_bin).mean()),
+            "bin_within_1": float((abs(true_bin - pred_bin) <= 1).mean()),
+            "spearman": None if np.isnan(rho) else float(rho)}
 
 
 def icl_main(cfg):
@@ -228,6 +250,9 @@ def feature_sets(cfg, items):
         sets[f"icl/{setting}"] = (np.hstack([tier, icl_f]), icl_cost(cfg, rows))
         if setting == icl_main(cfg):
             sets["icl"] = sets[f"icl/{setting}"]
+            # exploratory (added 11 Nov, after the curves): ICL plus the cheap text features,
+            # to fix ICL's calibration at small budgets; not a pre-registered predictor
+            sets["icl+text"] = (np.hstack([tier, text, icl_f]), icl_cost(cfg, rows))
     if self_f is not None and probe_f is not None:
         sets["all"] = (np.hstack([tier, text, self_f, probe_f]),
                        probe_cost(pdir / "self.jsonl") + probe_cost(pdir / "probe.jsonl"))
@@ -306,12 +331,24 @@ def main():
         if setting == icl_main(cfg):
             add_direct("icl_raw", pred, icl_cost(cfg, rows))
 
+    # label-level controls (a bin, not a curve, so not usable by the knapsack): the
+    # majority needed bin of the same k neighbours vs the ICL letter the model ranks first
+    k = cfg["icl"]["main"]["k"]
+    labels = {"knn_majority": knn_majority_bins(E, bins, train, k)}
+    main_rows = icl_file(cfg)
+    if main_rows is not None:
+        labels["icl_argmax"] = np.array([int(np.argmax(main_rows[it["id"]]["probs"])) for it in items])
+    label_controls = {n: bin_metrics(bins[~train], b[~train]) for n, b in labels.items()}
+    for n, m in label_controls.items():
+        rho = "n/a" if m["spearman"] is None else f"{m['spearman']:.3f}"
+        print(f"{n:22s} {'':6s} {m['bin_acc']:7.3f} {m['bin_within_1']:6.3f} {rho:>8s}  (label level)")
+
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "predicted_curves.json", "w") as f:
         json.dump({"budgets": budgets, "curves": predicted}, f)
     with open(out_dir / "summary.json", "w") as f:
         json.dump({"threshold": thr, "n_train": int(train.sum()), "n_test": int((~train).sum()),
-                   "predictors": summary}, f, indent=2)
+                   "predictors": summary, "label_controls": label_controls}, f, indent=2)
 
 
 if __name__ == "__main__":
