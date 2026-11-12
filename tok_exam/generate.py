@@ -39,7 +39,7 @@ def main():
     args = p.parse_args()
     out_dir = resolve(args.out_dir)
 
-    from vllm import SamplingParams  # imported late: slow, and needs a GPU
+    from vllm import SamplingParams
 
     s = cfg["sampling"]
     llm = load_llm(cfg)

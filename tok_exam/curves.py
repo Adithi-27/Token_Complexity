@@ -84,7 +84,6 @@ def main():
 
     from .llm import load_llm
 
-    # every budget of a trace shares its prefix, so prefix caching saves most prefill
     llm = load_llm(cfg, enable_prefix_caching=True)
     tokenizer = llm.get_tokenizer()
     for tier in args.tiers:

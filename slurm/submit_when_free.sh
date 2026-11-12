@@ -1,7 +1,4 @@
 #!/bin/bash
-# Wait for free QOS submit slots, then submit each stage with slurm/submit_tc.sh.
-# Usage: nohup bash slurm/submit_when_free.sh selfalloc realbudget > logs/submit_when_free.log 2>&1 &
-# Polls every 10 minutes; gives up after 4 days. Never touches other jobs.
 cd "$(dirname "$0")/.."
 stages=("$@")
 [ ${#stages[@]} -eq 0 ] && { echo "name at least one stage" >&2; exit 1; }

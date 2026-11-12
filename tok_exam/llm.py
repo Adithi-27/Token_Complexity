@@ -3,7 +3,7 @@
 
 def load_llm(cfg, **extra):
     """vLLM engine from the config; `extra` adds or overrides engine arguments."""
-    from vllm import LLM  # imported late: slow, and needs a GPU
+    from vllm import LLM
 
     m = cfg["model"]
     kwargs = dict(model=m["name"], dtype=m["dtype"], max_model_len=m["max_model_len"],

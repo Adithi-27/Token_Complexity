@@ -1,11 +1,9 @@
-# Every script should use one configuration source.
 import os
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-# TOK_CONFIG points every script at another config (e.g. a dry run)
 CONFIG_PATH = Path(os.environ.get("TOK_CONFIG", ROOT / "config.yaml"))
 TIERS = ("easy", "moderate", "hard")
 

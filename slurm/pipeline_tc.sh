@@ -1,9 +1,4 @@
 #!/bin/bash
-# The whole GPU critical path in one slot (QOS allows few jobs):
-#   curves -> difficulty (CPU, needed.jsonl labels) -> ICL with curve labels -> probe
-#   -> difficulty again (adds icl / self / probe predictors).
-# Each stage is skipped if its outputs already exist, so a resubmit continues.
-# Usage: sbatch slurm/pipeline_tc.sh
 #SBATCH --job-name=tok_pipeline
 #SBATCH --account=cminds_anandi
 #SBATCH --partition=cn3_anandi
@@ -19,7 +14,7 @@
 set -e
 source "/users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh"
 conda activate baseenv
-export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home   # see slurm/generate.sh
+export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home
 export HF_HUB_OFFLINE=1
 export PYTHONPATH="$PWD/vendor_vllm:$PWD/vendor:$PYTHONPATH"
 export NCCL_P2P_DISABLE=1
@@ -36,8 +31,8 @@ stage() { echo "=== $(date '+%F %T') $*"; python -m "$@"; }
 
 [ -s outputs/curves/hard.jsonl ] || stage tok_exam.curves
 stage tok_exam.sanity || true
-stage tok_exam.difficulty                       # writes needed.jsonl: ICL labels from curves
+stage tok_exam.difficulty
 ls outputs/icl/question_*_k16.jsonl >/dev/null 2>&1 || stage tok_exam.icl
 [ -s outputs/probe/probe.jsonl ] || stage tok_exam.probe
-stage tok_exam.difficulty                       # now with icl, self, probe predictors
+stage tok_exam.difficulty
 echo "=== $(date '+%F %T') done; run bandit/evaluate/valid/plots on CPU"

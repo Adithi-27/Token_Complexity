@@ -36,7 +36,6 @@ def load_math500(cfg, levels):
     for r in _load(cfg["data"]["sources"]["math500"]):
         if int(r["level"]) not in levels:
             continue
-        # test/precalculus/807.json -> math-precalculus-807
         _, subject, num = r["unique_id"].removesuffix(".json").split("/")
         rows.append({"id": f"math-{subject}-{num}", "dataset": "math500", "level": int(r["level"]),
                      "subject": r["subject"], "question": r["problem"], "gold": r["answer"].strip()})
@@ -46,7 +45,6 @@ def load_math500(cfg, levels):
 def load_aime2025(cfg):
     rows = []
     for r in _load(cfg["data"]["sources"]["aime2025"]):
-        # .../2025_AIME_II_Problems/Problem_7 -> aime-2025-II-7
         m = re.search(r"(\d{4})_AIME_(I{1,2})_Problems/Problem_(\d+)", r["url"])
         rows.append({"id": f"aime-{m[1]}-{m[2]}-{m[3]}", "dataset": "aime2025", "level": None,
                      "subject": None, "question": r["problem"], "gold": str(int(r["answer"]))})

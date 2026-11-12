@@ -1,16 +1,4 @@
 #!/bin/bash
-# Submit the Token Complexity GPU stages. Needs free submit slots (QOS anandi: 4 per user).
-# Usage: bash slurm/submit_tc.sh [curves] [icl] [probe] [selfalloc]   (default: curves icl)
-#   curves     step 7 truncation curves (everything downstream needs these)  ~6-10 h
-#   icl        ICL budgets, question + paper level, k x selection grid       ~2-4 h
-#              (labels from curves if outputs/difficulty/needed.jsonl exists, else full-budget traces)
-#   probe      self-rating and 128-token probe features                      ~1 h
-#   selfalloc  P5 whole-paper self-allocation                                ~4-6 h
-#   realbudget prefix determinism + budget-aware-prompt pilot (after curves) ~2-3 h
-#   latency    wall clock per paper at batch size 1, 3 papers x 4 policies     ~2 h
-# After curves finish, run the CPU stages on the login node:
-#   python -m tok_exam.difficulty && python -m tok_exam.bandit && python -m tok_exam.evaluate \
-#     && python -m tok_exam.valid && python -m tok_exam.plots
 set -e
 cd "$(dirname "$0")/.."
 if [ $# -eq 0 ]; then stages=(curves icl); else stages=("$@"); fi

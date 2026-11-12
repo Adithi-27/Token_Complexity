@@ -1,6 +1,4 @@
 #!/bin/bash
-# Usage: sbatch [--time=...] [--array=0-2] slurm/generate.sh [generate.py args]
-# With --array, task i runs only the i-th tier, two GPUs each.
 #SBATCH --job-name=tok_gen
 #SBATCH --account=cminds_anandi
 #SBATCH --partition=cn3_anandi
@@ -16,15 +14,12 @@
 set -e
 source "/users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh"
 conda activate baseenv
-# home is near its quota: model weights and HF caches live on /janaki/backup
 export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home
-export HF_HUB_OFFLINE=1      # weights are already in the cache
-# vLLM 0.6.6 breaks with the transformers 5 in baseenv; vendor_vllm/ holds 4.48
+export HF_HUB_OFFLINE=1
 export PYTHONPATH="$PWD/vendor_vllm:$PWD/vendor:$PYTHONPATH"
-export NCCL_P2P_DISABLE=1     # see disable_custom_all_reduce in config.yaml
-export VLLM_NO_USAGE_STATS=1 DO_NOT_TRACK=1    # vLLM's usage-stats file write hit the home quota
+export NCCL_P2P_DISABLE=1
+export VLLM_NO_USAGE_STATS=1 DO_NOT_TRACK=1
 
-# Fail fast on a GPU that needs a reset (seen on anandi in Oct 2026)
 echo "SLURM_JOB_GPUS=$SLURM_JOB_GPUS CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 nvidia-smi --query-gpu=index,uuid,pci.bus_id,temperature.gpu,ecc.errors.uncorrected.volatile.total --format=csv
 if nvidia-smi --query-gpu=temperature.gpu --format=csv | grep -q "requires reset"; then

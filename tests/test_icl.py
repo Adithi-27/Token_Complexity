@@ -18,13 +18,13 @@ class TestLabels(unittest.TestCase):
     def test_second_shortest_correct_trace(self):
         rows = [{"id": "a", "thinking_tokens": t, "correct": c}
                 for t, c in [(100, True), (300, True), (50, False), (900, True)]]
-        self.assertEqual(labels_from_traces(rows, GRID, 0.5)["a"], 3)   # 300 -> 512
+        self.assertEqual(labels_from_traces(rows, GRID, 0.5)["a"], 3)
         rows = [{"id": "b", "thinking_tokens": 100, "correct": i == 0} for i in range(4)]
         self.assertEqual(labels_from_traces(rows, GRID, 0.5)["b"], len(GRID))
 
     def test_label_rounds_up_to_grid(self):
         rows = [{"id": "a", "thinking_tokens": t, "correct": True} for t in (10, 129, 129, 129)]
-        self.assertEqual(labels_from_traces(rows, GRID, 0.5)["a"], 2)   # 129 -> 256
+        self.assertEqual(labels_from_traces(rows, GRID, 0.5)["a"], 2)
 
 
 class TestExemplars(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestExemplars(unittest.TestCase):
         self.pool = [item(i) for i in range(6)] + [item(9, "test")]
         self.labels = {it["id"]: i % 3 for i, it in enumerate(self.pool)}
         emb = np.eye(7)
-        emb[6, 2] = 0.9      # the test question is closest to q2
+        emb[6, 2] = 0.9
         self.emb = emb
 
     def test_never_self_never_test(self):

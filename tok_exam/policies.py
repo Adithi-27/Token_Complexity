@@ -52,7 +52,6 @@ class Table:
                 for b in self.budgets]
 
 
-# ---- helpers ---------------------------------------------------------------
 
 def floor_to_grid(x, grid):
     """Largest grid budget <= x (grid[0] is 0)."""
@@ -82,7 +81,7 @@ def knapsack(values, grid, B, unit):
     cap_units = int(B // unit)
     w = [b // unit for b in grid]
     qs = list(values)
-    best = np.zeros(cap_units + 1)            # best value using questions so far
+    best = np.zeros(cap_units + 1)
     choice = np.zeros((len(qs), cap_units + 1), dtype=int)
     for k, q in enumerate(qs):
         new = np.full(cap_units + 1, -np.inf)
@@ -131,7 +130,6 @@ def run_rollover(table, paper, caps, s):
     return out
 
 
-# ---- plan policies ---------------------------------------------------------
 
 def p0_equal(ctx, paper, B):
     """B/n per question, rounded to the grid with `fill` like P2 (so P0 is P2 at 1:1:1).
@@ -169,7 +167,6 @@ def shadow_price(values, grid, B, iters=60):
     V = {q: np.asarray(v, dtype=float) for q, v in values.items()}
 
     def pick(lam):
-        # ties go to the smaller budget (argmax returns the first maximum)
         return {q: int(np.argmax(v - lam * g)) for q, v in V.items()}
 
     def spend(c):
@@ -230,7 +227,6 @@ def oracle(ctx, paper, B):
                                          for q in paper["questions"]})
 
 
-# ---- sequential policies ---------------------------------------------------
 
 def paper_order(paper):
     """The order questions are printed in: a fixed shuffle per paper."""
@@ -267,7 +263,7 @@ def p4_triage(ctx, paper, B, s, require_closed=False):
         return run_plan(ctx.table, paper, {q["id"]: 0 for q in paper["questions"]}, s)
     s2 = (s + 1) % ctx.table.n_samples
     b1 = floor_to_grid(min(ctx.triage_budget, B / (2 * n)), ctx.grid)
-    if b1 == 0:   # too poor for two attempts (greedy b = 0 answers always agree)
+    if b1 == 0:
         return run_plan(ctx.table, paper, knapsack_plan(ctx, paper, B, ctx.predicted), s)
     first, second, unresolved = {}, {}, []
     for q in paper["questions"]:
@@ -280,16 +276,13 @@ def p4_triage(ctx, paper, B, s, require_closed=False):
     spent = sum(o.thinking for o in first.values()) + sum(o.thinking for o in second.values())
     caps = {q["id"]: b1 for q in paper["questions"]}
     if unresolved:
-        # sample s's pass-1 thinking is already paid, so it is handed back to pass 2
         refund = sum(first[q["id"]].thinking for q in unresolved)
         sub = {"paper_id": paper["paper_id"], "questions": unresolved}
-        # caps below b1 are not options: sample s already holds a b1-prefix, so a plan
-        # that lowered a cap and then got raised back to b1 would overspend B
         floor = ctx.grid.index(b1)
         curves = {q["id"]: [-1e6 if j < floor else p for j, p in enumerate(ctx.predicted[q["id"]])]
                   for q in unresolved}
         plan = knapsack_plan(ctx, sub, max(B - spent + refund, 0), curves)
-        caps.update({q: max(c, b1) for q, c in plan.items()})   # max() is now a no-op guard
+        caps.update({q: max(c, b1) for q, c in plan.items()})
     out = []
     for q in paper["questions"]:
         o2 = second[q["id"]]
@@ -314,7 +307,6 @@ def oracle_hindsight(ctx, paper, B, s):
             wj = cost(q, b)
             if wj > cap_units:
                 continue
-            # tiny tie-break towards smaller caps
             v = q["marks"] * ctx.table.outcome(q["id"], b, s).correct - 1e-9 * j
             cand = np.full(cap_units + 1, -np.inf)
             cand[wj:] = best[:cap_units + 1 - wj] + v
@@ -329,7 +321,6 @@ def oracle_hindsight(ctx, paper, B, s):
     return run_plan(ctx.table, paper, caps, s)
 
 
-# ---- registry --------------------------------------------------------------
 
 class Context:
     """What policies may know: the grid, predicted curves, tuned tier ratio.
@@ -345,7 +336,7 @@ class Context:
         self.ratio = ratio or pc["tier_ratio"]
         self.bandit = bandit
         self.icl_caps = icl_caps
-        self.predictors = predictors or {}     # name -> (curves, cost) for "policy@name"
+        self.predictors = predictors or {}
 
 
 PLANS = {"P0_equal": p0_equal, "P2_ratio": p2_ratio, "P3_knapsack": p3_knapsack,
@@ -357,7 +348,7 @@ SEQUENTIAL = {"P1_in_order": p1_in_order, "P4_triage": p4_triage,
 ROLL = "+roll"
 
 
-AT = "@"   # "P3_knapsack@icl": the same policy with the curves of another predictor
+AT = "@"
 
 
 def with_predictor(ctx, pred):

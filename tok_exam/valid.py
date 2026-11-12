@@ -97,7 +97,6 @@ def policy_waste(ctx, papers, budgets, policies, splits):
             for paper in papers:
                 for s in range(ctx.table.n_samples):
                     for r in run_policy(name, ctx, paper, B, s):
-                        # P4's second pass-1 attempt is another trace: count it as a check
                         check = r.get("check", 0)
                         part = spend_split(splits[r["id"], s], r["cap"], r["thinking"] - check)
                         part["check"] = check

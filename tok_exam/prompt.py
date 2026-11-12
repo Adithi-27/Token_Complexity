@@ -1,4 +1,3 @@
-# Same template for every tier (planning.md, step 3).
 def build_user_message(cfg, question):
     return cfg["prompt"]["template"].format(question=question.strip())
 

@@ -60,7 +60,7 @@ def main():
     tok = llm.get_tokenizer()
     force_params = SamplingParams(temperature=0, max_tokens=cfg["curves"]["max_answer_tokens"])
     llm.generate([build_prompt(cfg, tok, "What is 1 + 1?")],
-                 SamplingParams(max_tokens=32), use_tqdm=False)          # warm-up
+                 SamplingParams(max_tokens=32), use_tqdm=False)
 
     rows = []
     for name in lc["policies"]:

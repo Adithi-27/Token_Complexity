@@ -51,7 +51,7 @@ class TestSelfAlloc(unittest.TestCase):
               for p, sc in (("a", 60.0), ("b", 40.0)) for B in (2048,) for s in (0, 1)]
         runs = [{"policy": "P0", "paper_id": "a", "budget": 2048, "score": 50.0},
                 {"policy": "P0", "paper_id": "b", "budget": 2048, "score": 50.0},
-                {"policy": "P9", "paper_id": "a", "budget": 2048, "score": 50.0}]   # b missing
+                {"policy": "P9", "paper_id": "a", "budget": 2048, "score": 50.0}]
         c = paired_comparison(p5, runs, ["P0", "P9"], n_boot=50)
         self.assertEqual(c["papers"], 2)
         self.assertAlmostEqual(c["p5"]["2048"], 50.0)

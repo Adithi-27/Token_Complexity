@@ -7,7 +7,6 @@ A cleaned exact match is tried first; otherwise math-verify decides
 import re
 
 _BOXED = re.compile(r"\\(?:boxed|fbox)\s*\{")
-# words in \text{...}: units like "dollars", "cm", "inches" (but not \text{(A)})
 _UNIT_TEXT = re.compile(r"\\(?:text|textbf|mathrm|mbox)\s*\{\s*[A-Za-z][A-Za-z ]*\}")
 _NOISE = re.compile(r"\\[,;!: ]|\\\$|\\%|%|\^\s*\\circ|\^\{\\circ\}|\\left|\\right|[\s$]")
 _NUMBER = re.compile(r"[+-]?\d[\d,]*(?:\.\d+)?")
@@ -26,7 +25,6 @@ def last_boxed(text):
                 depth -= 1
                 if depth == 0:
                     return text[start:i]
-        # unclosed box (truncated output): fall back to the previous one
     return None
 
 
@@ -35,12 +33,12 @@ def clean(s):
     without_units = _UNIT_TEXT.sub("", s)
     if without_units.strip():
         s = without_units
-    else:  # the whole answer is text, e.g. \text{Evelyn}: keep the word itself
+    else:
         s = re.sub(r"\\(?:text|textbf|mathrm|mbox)\s*\{([^{}]*)\}", r"\1", s)
     s = _NOISE.sub("", s)
     s = s.replace("\\dfrac", "\\frac").replace("\\tfrac", "\\frac")
     s = s.rstrip(".")
-    if _NUMBER.fullmatch(s):  # 1,000 -> 1000 and 18.00 -> 18 (not for tuples like (1,2))
+    if _NUMBER.fullmatch(s):
         s = s.replace(",", "")
         if "." in s:
             s = s.rstrip("0").rstrip(".")
@@ -55,10 +53,10 @@ def is_equiv(pred, gold):
         return False
     if p == g:
         return True
-    from math_verify import parse, verify  # slow import: only when needed
+    from math_verify import parse, verify
     try:
         return bool(verify(parse(f"${g}$"), parse(f"${p}$")))
-    except Exception:  # math-verify gives up on some LaTeX; count as wrong
+    except Exception:
         return False
 
 

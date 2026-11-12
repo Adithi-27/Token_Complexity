@@ -16,17 +16,15 @@ import json
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
 
-from .config import TIERS, load_config, resolve  # noqa: E402
-from .records import read_jsonl  # noqa: E402
+from .config import TIERS, load_config, resolve
+from .records import read_jsonl
 
-# reference palette (dataviz skill), light mode, slots in fixed order
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
 TEXT, TEXT_2, GRID_C, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
-REFERENCE = "#52514e"   # oracle / upper bound: neutral, dashed
-# colour follows the entity: each policy and tier keeps its slot in every figure
+REFERENCE = "#52514e"
 POLICY_COLOR = {"P0_equal": SERIES[0], "P1_in_order": SERIES[1], "P2_ratio": SERIES[2],
                 "P2_ratio_tuned": SERIES[3], "P3_knapsack": SERIES[4], "P4_triage": SERIES[5],
                 "P4_triage_closed": "#5c8a00",
@@ -42,7 +40,7 @@ POLICY_LABEL = {"P0_equal": "P0 equal share", "P1_in_order": "P1 in order",
                 "oracle": "Oracle (best plan)",
                 "oracle_hindsight": "Hindsight oracle (upper bound)"}
 TIER_COLOR = dict(zip(TIERS, SERIES[:3]))
-ROLL = "+roll"   # rollover variant: same colour as its plan, dotted line
+ROLL = "+roll"
 
 
 def policy_style(name):
@@ -141,11 +139,10 @@ def score_vs_budget(cfg, out, split, show_roll=False, name="score_vs_budget.png"
                                                              if r["budget"] == B])}
                              for B in sorted({r["budget"] for r in rows})}
     for pol, by_b in series.items():
-        if "@" in pol:          # predictor variants have their own figure
+        if "@" in pol:
             continue
         if pol.endswith(ROLL) and not show_roll:
             continue
-        # the rollover figure pairs each plan with its rollover twin, nothing else
         if show_roll and not pol.endswith(ROLL) and pol + ROLL not in series:
             continue
         bs = [int(b) for b in by_b]
@@ -211,7 +208,7 @@ def icl_shots(cfg, out, metric="spearman"):
     fig, ax = plt.subplots(figsize=(6.8, 4.2))
     for k, (name, pts) in enumerate(sorted(lines.items())):
         if zero is not None and name.startswith("ICL") and 0 not in pts:
-            pts = {0: zero[0], **pts}          # k = 0 is one shared zero-shot run
+            pts = {0: zero[0], **pts}
         ks = sorted(pts)
         ax.plot(ks, [pts[x] for x in ks], marker="o", color=SERIES[k % len(SERIES)],
                 linestyle="--" if name.startswith("kNN") else "-", label=name)

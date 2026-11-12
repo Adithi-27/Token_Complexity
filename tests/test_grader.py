@@ -10,7 +10,6 @@ from tok_exam.papers import sample_papers, total_marks
 from tok_exam.prompt import build_user_message
 from tok_exam.records import FIELDS, make_row, split_thinking
 
-# (name, answer text, gold, expected correct)
 CASES = [
     ("integer", r"So the answer is $\boxed{18}$.", "18", True),
     ("wrong integer", r"\boxed{17}", "18", False),

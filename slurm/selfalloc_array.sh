@@ -1,9 +1,4 @@
 #!/bin/bash
-# P5 self-allocation over all test papers, split across array tasks.
-# Usage: sbatch --array=0-1 slurm/selfalloc_array.sh        (2 tasks x 50 papers, ~10 h each)
-#        sbatch --array=1   slurm/selfalloc_array.sh        (rerun one task; it resumes)
-# Task k of N handles papers [k*100/N, (k+1)*100/N) and writes outputs/selfalloc/test_part<k>.jsonl.
-# Afterwards, on the login node:  python -m tok_exam.selfalloc --summarise
 #SBATCH --job-name=tok_p5
 #SBATCH --account=cminds_anandi
 #SBATCH --partition=cn3_anandi
@@ -19,7 +14,7 @@
 set -e
 source "/users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh"
 conda activate baseenv
-export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home   # see slurm/generate.sh
+export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home
 export HF_HUB_OFFLINE=1
 export PYTHONPATH="$PWD/vendor_vllm:$PWD/vendor:$PYTHONPATH"
 export NCCL_P2P_DISABLE=1

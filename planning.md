@@ -195,6 +195,7 @@ Token Complexity/
 - [x] P4 fix: P4_triage_closed (10 Nov; recovers 52.8 -> 84.2 @64k, still < P3)
 - [x] Review fixes (10 Nov): submit_tc.sh stage args, P0 fill, P4 predictor cost, out-of-fold train curves, valid.py check tokens, realbudget prefix encoding; 57 tests
 - [x] P5 selfalloc (65152), realbudget (65153), latency (65154): done 11 Nov. P5 beats every replay policy at 8k-16k by compressing (~400 tokens/question); truncation matches a budget-aware prompt within 1.4 points; 19.9 tok/s at batch 1
+- [x] P5 full run, 100 test papers x 4 samples (job 65210, done 12 Nov 02:20; 12h47 / 12h01). P5 20.0 / 46.2 / 64.2 / 76.7 at 2k-16k vs P7+roll 35.2 / 41.5 / 53.0 / 67.8 (+11.1 at 8k, +9.0 at 16k, CIs clear of 0); outputs/selfalloc/summary_test.json; report updated 12 Nov, slides still show the interim 20-paper numbers
 - [x] GSM8K label decision: course report keeps raw labels + cleaned redraw (option A); ICML fixes labels (option B), steps in the report
 - [x] ICL GPU run (job 65019)
 - [x] Valid/invalid analysis on real curves

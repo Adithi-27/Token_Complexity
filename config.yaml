@@ -1,137 +1,129 @@
-# Single source of truth for every run (planning.md, step 1).
-# Nothing in the code hard-codes any of these values.
 
 model:
   name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
   dtype: bfloat16
-  tensor_parallel_size: 2          # 32B in bf16 is ~66 GB, so two 48 GB GPUs
+  tensor_parallel_size: 2
   gpu_memory_utilization: 0.92
-  # anandi GPU-to-GPU direct copies returned wrong data in Oct 2026, so keep
-  # traffic off the direct path (also NCCL_P2P_DISABLE in slurm/*.sh)
   disable_custom_all_reduce: true
-  max_model_len: 18432             # prompt + max_thinking_tokens + max_answer_tokens
+  max_model_len: 18432
 
-sampling:                          # DeepSeek-R1-Distill recommended settings
+sampling:
   temperature: 0.6
   top_p: 0.95
   max_thinking_tokens: 16384
-  max_answer_tokens: 1024          # allowance after </think>
+  max_answer_tokens: 1024
   n_samples: 4
-  base_seed: 20261024              # seed of sample i = base_seed + i
+  base_seed: 20261024
 
 prompt:
-  # DeepSeek's recommended math prompt; no system prompt. The chat template
-  # itself opens the <think> block.
   system: null
   template: "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}."
 
 data:
   processed_dir: data/processed
-  seed: 20261024                   # GSM8K subsample and train/test split
+  seed: 20261024
   sources:
     gsm8k:    {hf_path: openai/gsm8k, hf_name: main, split: test}
     math500:  {hf_path: HuggingFaceH4/MATH-500, hf_name: null, split: test}
     aime2025: {hf_path: yentinglin/aime_2025, hf_name: default, split: train}
-  tiers:                           # what goes into each difficulty tier
-    easy:     {gsm8k: 200}                          # random 200 of 1319
-    moderate: {math500_levels: [2, 3]}              # all 195
-    hard:     {math500_levels: [5], aime2025: true} # 134 + 30
-  test_fraction: 0.5               # per tier; test questions never used for fitting
+  tiers:
+    easy:     {gsm8k: 200}
+    moderate: {math500_levels: [2, 3]}
+    hard:     {math500_levels: [5], aime2025: true}
+  test_fraction: 0.5
 
-papers:                            # planning.md, step 5
+papers:
   dir: data/papers
-  n_papers: 100                    # per split
+  n_papers: 100
   composition: {easy: 10, moderate: 6, hard: 4}
   marks: {easy: 1, moderate: 2, hard: 4}
 
 output:
   dir: outputs/full_budget
 
-curves:                            # planning.md, step 7 (tok_exam/curves.py)
+curves:
   dir: outputs/curves
   budgets: [0, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-  max_answer_tokens: 64            # greedy continuation after "\boxed{"
+  max_answer_tokens: 64
 
-difficulty:                        # planning.md, steps 9-10 (tok_exam/difficulty.py)
+difficulty:
   dir: outputs/difficulty
-  threshold: 0.5                   # needed budget: first budget with acc >= threshold
-  C: 1.0                           # inverse L2 strength of the per-budget regressions
+  threshold: 0.5
+  C: 1.0
   embed_model: sentence-transformers/all-MiniLM-L6-v2
-  probe_dir: outputs/probe         # GPU features from tok_exam/probe.py
-  probe_tokens: 128                # thinking tokens the probe may generate
+  probe_dir: outputs/probe
+  probe_tokens: 128
   self_rating_prompt: "Here is a math problem.\n\n{question}\n\nWithout solving it, rate how hard it is for you on a scale from 1 (very easy) to 5 (very hard). Reply with a single digit."
 
-policies:                          # planning.md, steps 11-12 (tok_exam/policies.py, evaluate.py)
+policies:
   dir: outputs/eval
   total_budgets: [2048, 4096, 8192, 16384, 32768, 65536]
-  knapsack_unit: 128               # every grid budget is a multiple of this
+  knapsack_unit: 128
   tier_ratio: {easy: 1, moderate: 2, hard: 4}
-  ratio_search: [1, 2, 4, 8]       # moderate and hard weights tried (easy = 1) on train papers
-  triage_budget: 256               # P4 pass-1 cap per attempt
-  predictor: tier+text             # which step-10 predictor P3 and P4 use; best one goes here
-  # also run these policies once per predictor ("P3_knapsack@icl"), for predictors that exist
+  ratio_search: [1, 2, 4, 8]
+  triage_budget: 256
+  predictor: tier+text
   predictor_policies: [P3_knapsack, P3_knapsack+roll, P7_shadow]
-  compare_predictors: [tier, tier+text, embed, knn, self, probe, icl, icl_raw, icl+text]   # icl+text: exploratory, 11 Nov
+  compare_predictors: [tier, tier+text, embed, knn, self, probe, icl, icl_raw, icl+text]
 
-bandit:                            # planning.md, step 13 (tok_exam/bandit.py)
+bandit:
   dir: outputs/bandit
-  alpha: 0.5                       # LinUCB exploration width
-  reg: 1.0                         # ridge prior per arm
-  epochs: 20                       # passes over the train questions
+  alpha: 0.5
+  reg: 1.0
+  epochs: 20
   seed: 20261024
-  # token prices (marks per 1000 thinking tokens) drawn while training and swept at test
   lambdas: [0.0, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 4.0]
 
-selfalloc:                         # planning.md, step 11 P5 (tok_exam/selfalloc.py)
+selfalloc:
   dir: outputs/selfalloc
-  n_papers: 100                    # all test papers (the 20 x 2 pilot of 11 Nov is kept as test_20papers_2samples.jsonl)
-  n_samples: 4                     # same as the replay policies
-  chunk_papers: 10                 # runs are written per chunk of papers, so a job can resume
+  n_papers: 100
+  n_samples: 4
+  chunk_papers: 10
   compare_policies: [P0_equal, P2_ratio, P3_knapsack+roll, P6_icl_paper, P7_shadow+roll, oracle, oracle_hindsight]
-  budgets: [2048, 4096, 8192, 16384]   # paper prompt + 16k thinking fits in 32k context
-  max_model_len: 32768             # Qwen2.5-32B native context, for this stage only
-  answer_tokens: 1024              # room for the 20 boxed answers
+  budgets: [2048, 4096, 8192, 16384]
+  max_model_len: 32768
+  answer_tokens: 1024
   header: "This is an exam paper with {n} questions worth {marks} marks in total. You have a total thinking budget of {budget} tokens for the whole paper, so decide how much effort each question deserves. Easy questions should not need much; skip a question if it is not worth the tokens."
   footer: "After thinking, write one line per question in the form \"Q<k>: \\boxed{{answer}}\" for k = 1 to {n}, in order. Give an answer for every question, even if it is a guess."
 
-icl:                               # in-context learning of budgets (tok_exam/icl.py)
+icl:
   dir: outputs/icl
-  label_source: auto               # curves (needed.jsonl) if present, else full_budget traces
+  label_source: auto
   shots: [0, 2, 4, 8, 16]
-  selections: [retrieved, random, shuffled]   # shuffled = label-permutation control
-  main: {selection: retrieved, k: 8}   # the setting tok_exam.difficulty and P6 use
+  selections: [retrieved, random, shuffled]
+  main: {selection: retrieved, k: 8}
   seed: 20261024
-  n_papers: 100                    # test papers for the paper-level variant (P6)
-  max_model_len: 16384             # a 16-shot prompt plus a 20-question paper fits
+  n_papers: 100
+  max_model_len: 16384
   paper_answer_tokens: 400
-  charge_prompt_tokens: false      # prompt (prefill) tokens are reported, not charged to B
+  charge_prompt_tokens: false
   question_header: "You will see math problems, each labelled with how many thinking tokens you needed to solve it reliably. Choose the label for the last problem from the options. Reply with the letter only."
   paper_header: "This is an exam paper with {n} questions. You have a total thinking budget of {budget} tokens for the whole paper. Decide how many thinking tokens each question should get. Allowed amounts per question: {grid}. Easy questions need few tokens; give 0 to a question that is not worth it."
   paper_footer: "Write one line per question in the form \"Q<k>: <tokens>\" for k = 1 to {n}, in order, and nothing else. The amounts must add up to at most {budget}."
 
-valid:                             # valid vs invalid thinking (tok_exam/valid.py)
+valid:
   dir: outputs/valid
 
-realbudget:                        # truncation vs real budget control (tok_exam/realbudget.py)
+realbudget:
   dir: outputs/realbudget
   seed: 20261024
-  n_per_tier: 24                   # stratified test questions per tier
+  n_per_tier: 24
   n_samples: 2
   budgets: [512, 2048, 8192]
-  prefix_traces: 50                # determinism check of the stored traces
+  prefix_traces: 50
   prefix_cap: 1024
   budget_line: "Think for at most {budget} thinking tokens before answering."
 
-latency:                           # wall clock per paper at batch size 1 (tok_exam/latency.py)
+latency:
   dir: outputs/latency
-  n_papers: 3                      # first 3 test papers, measured for real
+  n_papers: 3
   budget: 16384
   policies: [P0_equal, P2_ratio, P3_knapsack+roll, P7_shadow+roll]
 
-ablations:                         # planning.md, step 14 (tok_exam/ablations.py)
+ablations:
   dir: outputs/ablations
   n_papers: 100
-  seed: 20261111                   # same redraw for every variant
+  seed: 20261111
   policies: [P0_equal, P1_in_order, P2_ratio, P3_knapsack+roll, P7_shadow+roll, oracle, oracle_hindsight]
   variants:
     default: {}
@@ -140,23 +132,21 @@ ablations:                         # planning.md, step 14 (tok_exam/ablations.py
     hard_heavy: {composition: {easy: 4, moderate: 6, hard: 10}}
     size_10: {composition: {easy: 5, moderate: 3, hard: 2}, budget_scale: 0.5}
     size_40: {composition: {easy: 20, moderate: 12, hard: 8}, budget_scale: 2}
-    # wrong gold (a): 288, 649, 749; ambiguous (b): 380, 552, 835, 962, 1074 (agents/gsm8k_check.md)
     gsm8k_clean: {exclude: [gsm8k-288, gsm8k-649, gsm8k-749, gsm8k-380, gsm8k-552, gsm8k-835, gsm8k-962, gsm8k-1074]}
   cost_policies: [P3_knapsack+roll@probe, P3_knapsack+roll@self, P3_knapsack+roll@icl, P3_knapsack+roll@all]
 
-stats:                             # two-level paired bootstrap (tok_exam/stats.py)
+stats:
   dir: outputs/stats
   n_boot: 1000
   workers: 8
   seed: 20261024
-  budgets: [8192, 16384, 32768]    # the range where allocation matters
+  budgets: [8192, 16384, 32768]
   policies: [P0_equal, P1_in_order, P2_ratio_tuned+roll, P3_knapsack+roll, P4_triage,
              P7_shadow+roll, oracle+roll, oracle_hindsight]
-  # pre-registered before the curves land (7-9 Nov 2026); Holm over these x budgets + AUC
   comparisons:
-    - [P3_knapsack+roll@icl, P3_knapsack+roll@knn]                 # ICL beats retrieval?
-    - [P3_knapsack+roll@icl, P2_ratio_tuned+roll]                  # beats the tier heuristic?
-    - [P3_knapsack+roll@icl, P3_knapsack+roll@icl/retrieved_k0]    # exemplars help over zero-shot?
+    - [P3_knapsack+roll@icl, P3_knapsack+roll@knn]
+    - [P3_knapsack+roll@icl, P2_ratio_tuned+roll]
+    - [P3_knapsack+roll@icl, P3_knapsack+roll@icl/retrieved_k0]
 
-plots:                             # planning.md, step 15 (tok_exam/plots.py)
+plots:
   dir: reports/figures

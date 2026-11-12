@@ -30,7 +30,6 @@ def split_thinking(full_output):
 def make_row(item, sample_idx, prompt, full_output, tokenizer):
     """Build one output row. `item` is a row of data/processed/pool.jsonl."""
     thinking, answer = split_thinking(full_output)
-    # Only a box after </think> counts as the model's answer.
     pred, correct = grade(answer, item["gold"]) if answer is not None else (None, False)
     n_tokens = lambda t: len(tokenizer.encode(t, add_special_tokens=False)) if t else 0
     row = {

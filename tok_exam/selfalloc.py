@@ -123,7 +123,6 @@ def run_jobs(cfg, llm, tok, pool, jobs):
     prompts = [tok.apply_chat_template([{"role": "user", "content": paper_message(cfg, paper, pool, B)}],
                                        tokenize=False, add_generation_prompt=True)
                for paper, B, _ in jobs]
-    # stage 1: think, at most B tokens (plus room to write the answers if it stops early)
     outs = llm.generate(prompts, [SamplingParams(
         temperature=s["temperature"], top_p=s["top_p"], seed=sample_seed(cfg, i),
         max_tokens=B + sc["answer_tokens"], skip_special_tokens=False) for _, B, i in jobs],
@@ -136,7 +135,7 @@ def run_jobs(cfg, llm, tok, pool, jobs):
                                                   add_special_tokens=False)) <= B:
             thinking_text, answer = text.split(THINK_CLOSE, 1)
             results[j] = (len(tok.encode(thinking_text, add_special_tokens=False)), False, answer)
-        else:   # over budget: cut the thinking at B and force the answers
+        else:
             thinking_text = tok.decode(ids[:B]).split(THINK_CLOSE)[0]
             forced.append((j, prompts[j] + thinking_text + "\n" + THINK_CLOSE + "\n\n"))
             results[j] = (min(B, len(ids)), True, None)

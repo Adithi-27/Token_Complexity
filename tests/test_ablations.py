@@ -21,7 +21,7 @@ class TestAblations(unittest.TestCase):
             self.assertEqual((tiers.count("easy"), tiers.count("moderate"), tiers.count("hard")), (10, 6, 10))
             self.assertTrue(all(q["marks"] == 1 for q in p["questions"] if q["tier"] == "hard"))
             self.assertFalse({"easy0", "easy1"} & {q["id"] for q in p["questions"]})
-        self.assertEqual(variant_papers(POOL, spec, BASE, 20, 1), papers)   # seeded
+        self.assertEqual(variant_papers(POOL, spec, BASE, 20, 1), papers)
 
     def test_costs(self):
         preds = {"icl": ({}, 1.0), "probe": ({}, 128.0), "tier": ({}, 0.0)}
@@ -33,13 +33,12 @@ class TestAblations(unittest.TestCase):
 
 class TestLabelControl(unittest.TestCase):
     def test_majority_bin(self):
-        # 4 train points: two near (0, 1) with bin 3, two near (1, 0) with bins 1 and 2
         E = np.array([[0, 1], [0.1, 1], [1, 0], [1, 0.1], [0.05, 1]], dtype=float)
         bins = np.array([3, 3, 1, 2, 0])
         train = np.array([True, True, True, True, False])
         got = knn_majority_bins(E, bins, train, 2)
-        self.assertEqual(got[4], 3)          # both neighbours say 3
-        self.assertEqual(got[2], 2)          # its only other close train point says 2; tie -> smaller
+        self.assertEqual(got[4], 3)
+        self.assertEqual(got[2], 2)
         m = bin_metrics(np.array([0, 1, 2]), np.array([0, 2, 2]))
         self.assertAlmostEqual(m["bin_acc"], 2 / 3)
         self.assertEqual(m["bin_within_1"], 1.0)

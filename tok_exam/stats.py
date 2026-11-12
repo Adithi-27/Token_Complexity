@@ -142,7 +142,7 @@ def holm(pvals):
 
 def summarise(reps, policies, budgets, comparisons):
     """Intervals per policy and budget, and the paired comparison tests."""
-    arr = {n: np.array([r[n] for r in reps]) for n in policies}      # [boot, budget]
+    arr = {n: np.array([r[n] for r in reps]) for n in policies}
     out = {"policies": {}, "comparisons": []}
     for n in policies:
         a = arr[n]

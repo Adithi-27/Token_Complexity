@@ -29,11 +29,10 @@ class TestStats(unittest.TestCase):
         self.assertEqual(len(papers), 3)
         for p in papers:
             ids = [q["id"] for q in p["questions"]]
-            self.assertEqual(len(ids), len(set(ids)))          # virtual ids are distinct
+            self.assertEqual(len(ids), len(set(ids)))
             self.assertEqual([q["tier"] for q in p["questions"]].count("easy"), 2)
         v = papers[0]["questions"][0]["id"]
         self.assertIn(origin[v], {it["id"] for it in ITEMS})
-        # a resampled sample index maps onto the base table
         self.assertEqual(t.outcome(v, 128, 0).correct, t.samples[v][0] == 0)
 
     def test_by_origin(self):

@@ -44,7 +44,6 @@ KEYWORDS = ("how many", "find all", "probability", "sum of", "remainder", "prove
             "minimum", "triangle", "circle", "polynomial", "integer", "real", "complex", "digits")
 
 
-# ---- step 9: needed budget -------------------------------------------------
 
 def curve_matrix(curves, ids, budgets):
     """[n questions, n budgets] accuracy from load_curves output."""
@@ -61,7 +60,6 @@ def bin_label(i, budgets):
     return str(budgets[i]) if i < len(budgets) else "never"
 
 
-# ---- step 10: features -----------------------------------------------------
 
 def tier_features(items):
     return np.array([[it["tier"] == t for t in TIERS] for it in items], dtype=float)
@@ -112,7 +110,6 @@ def probe_cost(path):
     return sum(r["cost_tokens"] for r in rows) / len(rows)
 
 
-# ---- step 10: curve predictor ----------------------------------------------
 
 class CurvePredictor:
     """One logistic regression per budget on standardised features.
@@ -135,7 +132,7 @@ class CurvePredictor:
         self.models = []
         for j in range(acc.shape[1]):
             w = np.r_[acc[:, j], 1 - acc[:, j]]
-            if w[:len(Z)].sum() == 0 or w[len(Z):].sum() == 0:  # one class only
+            if w[:len(Z)].sum() == 0 or w[len(Z):].sum() == 0:
                 self.models.append(float(acc[:, j].mean()))
                 continue
             m = LogisticRegression(C=self.C, max_iter=2000)
@@ -179,7 +176,7 @@ def knn_neighbours(E, train, k):
     Z = E / np.linalg.norm(E, axis=1, keepdims=True)
     tr = np.where(train)[0]
     sims = Z @ Z[tr].T
-    sims[tr, np.arange(len(tr))] = -np.inf       # a train question is not its own neighbour
+    sims[tr, np.arange(len(tr))] = -np.inf
     return tr[np.argsort(-sims, axis=1)[:, :k]]
 
 
@@ -243,15 +240,12 @@ def feature_sets(cfg, items):
         sets["self"] = (np.hstack([tier, self_f]), probe_cost(pdir / "self.jsonl"))
     if probe_f is not None:
         sets["probe"] = (np.hstack([tier, probe_f]), probe_cost(pdir / "probe.jsonl"))
-    # one fitted ICL predictor per setting ("icl/random_k4"); "icl" is the main setting
     for setting, rows in icl_files(cfg).items():
         icl_f = np.array([rows[it["id"]]["probs"] + [rows[it["id"]]["expected_bin"]]
                           for it in items])
         sets[f"icl/{setting}"] = (np.hstack([tier, icl_f]), icl_cost(cfg, rows))
         if setting == icl_main(cfg):
             sets["icl"] = sets[f"icl/{setting}"]
-            # exploratory (added 11 Nov, after the curves): ICL plus the cheap text features,
-            # to fix ICL's calibration at small budgets; not a pre-registered predictor
             sets["icl+text"] = (np.hstack([tier, text, icl_f]), icl_cost(cfg, rows))
     if self_f is not None and probe_f is not None:
         sets["all"] = (np.hstack([tier, text, self_f, probe_f]),
@@ -272,7 +266,6 @@ def main():
     acc = curve_matrix(curves, [it["id"] for it in items], budgets)
     train = np.array([it["split"] == "train" for it in items])
 
-    # step 9
     bins = needed_bins(acc, thr)
     write_jsonl(out_dir / "needed.jsonl",
                 [{"id": it["id"], "tier": it["tier"], "dataset": it["dataset"],
@@ -287,7 +280,6 @@ def main():
         counts = np.bincount(bins[sel], minlength=len(labels))
         print(f"{t:9s} " + " ".join(f"{c:6d}" for c in counts))
 
-    # step 10
     summary, predicted = {}, {}
     print(f"\n{'predictor':22s} {'brier':>6s} {'bin acc':>7s} {'±1 bin':>6s} "
           f"{'spearman':>8s} {'cost tok':>8s}")
@@ -295,7 +287,7 @@ def main():
     for name, (X, cost) in feature_sets(cfg, items).items():
         feature_sets_cache[name] = X
         model = CurvePredictor(C=dc["C"]).fit(X[train], acc[train])
-        pred = model.predict(X)          # test rows: fitted on all train questions
+        pred = model.predict(X)
         pred[train] = out_of_fold(X, acc, train, dc["C"], seed=cfg["data"]["seed"])
         summary[name] = {**evaluate(pred[~train], acc[~train], thr), "cost_tokens": cost}
         predicted[name] = {it["id"]: [round(float(p), 4) for p in row]
@@ -314,8 +306,6 @@ def main():
         print(f"{name:22s} {s['brier']:6.3f} {s['bin_acc']:7.3f} {s['bin_within_1']:6.3f} "
               f"{rho:>8s} {cost:8.1f}")
 
-    # ICL control: average the true curves of the same retrieved train neighbours, for
-    # every k ICL is run with ("knn/k4"); "knn" uses the main k
     E = feature_sets_cache["embed"]
     for k in sorted(set(cfg["icl"]["shots"]) - {0} | {cfg["icl"]["main"]["k"]}):
         pred = knn_curves(E, acc, train, k)
@@ -323,7 +313,6 @@ def main():
         if k == cfg["icl"]["main"]["k"]:
             add_direct("knn", pred, 0.0)
 
-    # the ICL distribution itself, nothing fitted ("icl_raw/retrieved_k8"; main = "icl_raw")
     from .icl import curve_from_probs
     for setting, rows in icl_files(cfg).items():
         pred = np.array([curve_from_probs(np.array(rows[it["id"]]["probs"])) for it in items])
@@ -331,8 +320,6 @@ def main():
         if setting == icl_main(cfg):
             add_direct("icl_raw", pred, icl_cost(cfg, rows))
 
-    # label-level controls (a bin, not a curve, so not usable by the knapsack): the
-    # majority needed bin of the same k neighbours vs the ICL letter the model ranks first
     k = cfg["icl"]["main"]["k"]
     labels = {"knn_majority": knn_majority_bins(E, bins, train, k)}
     main_rows = icl_file(cfg)

@@ -6,10 +6,9 @@ import sys
 import types
 import unittest
 
-# sweep_rows only needs vllm.SamplingParams; a stub keeps this test off the GPU
 sys.modules.setdefault("vllm", types.SimpleNamespace(SamplingParams=lambda **kw: kw))
 
-from tok_exam.curves import FORCE, parse_forced, sweep_rows  # noqa: E402
+from tok_exam.curves import FORCE, parse_forced, sweep_rows
 
 
 class FakeTokenizer:

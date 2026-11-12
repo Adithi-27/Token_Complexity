@@ -1,7 +1,4 @@
 #!/bin/bash
-# Watch the P5 array job, resubmit a task that fails or times out (it resumes from its
-# part file), and when every task is done run the merge, the comparison and the plots.
-# Usage: nohup bash slurm/watch_p5.sh <array job id> <n tasks> > logs/watch_p5.log 2>&1 &
 cd "$(dirname "$0")/.."
 ARRAY=$1; N=$2; MAX_RETRIES=2
 log() { echo "$(date '+%F %T') $*"; }

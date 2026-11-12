@@ -29,7 +29,6 @@ from .records import read_jsonl, write_jsonl
 BASE_POLICIES = ["P0_equal", "P1_in_order", "P2_ratio", "P2_ratio_tuned", "P3_knapsack",
                  "P4_triage", "P4_triage_closed", "bandit", "P6_icl_paper", "P7_shadow", "oracle",
                  "oracle_hindsight"]
-# rollover variants of every plan (tokens a question leaves unused move on)
 ALL_POLICIES = BASE_POLICIES + [n + ROLL for n in ("P0_equal", "P2_ratio", "P2_ratio_tuned",
                                                   "P3_knapsack", "bandit", "P6_icl_paper",
                                                   "P7_shadow", "oracle")]
@@ -156,7 +155,6 @@ def main():
             marks = float(np.mean([r["score"] * total_marks(p) / 100 for p, r in zip(papers, res)]))
             summary[name][B] = {
                 "score_mean": float(np.mean(sc)), "score_std": float(np.std(sc)),
-                # thinking tokens per mark scored (mean thinking / mean marks per paper)
                 "tokens_per_mark": float(np.mean([r["thinking"] for r in res])) / marks if marks else None,
                 "thinking_mean": float(np.mean([r["thinking"] for r in res])),
                 "tokens_mean": float(np.mean([r["tokens"] for r in res])),

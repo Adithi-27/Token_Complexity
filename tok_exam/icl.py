@@ -43,7 +43,6 @@ LETTERS = "ABCDEFGHIJKLMNOP"
 _ALLOC = re.compile(r"Q\s*(\d+)\s*[:=\-]\s*\**\s*([\d,]+)")
 
 
-# ---- labels and exemplars --------------------------------------------------
 
 def bin_names(grid):
     return [str(b) for b in grid] + ["never"]
@@ -100,7 +99,6 @@ class Exemplars:
             return rng.sample(cands, k)
         sims = self.E[self.train_rows] @ self.E[self.row[item["id"]]]
         order = [i for i in np.argsort(-sims) if self.train[i]["id"] != item["id"]]
-        # most similar last, nearest to the question being asked
         return [self.train[i] for i in order[:k]][::-1]
 
 
@@ -112,7 +110,6 @@ def shuffled_labels(labels, pool, seed):
     return {**labels, **{a: labels[b] for a, b in zip(ids, perm)}}
 
 
-# ---- prompts ---------------------------------------------------------------
 
 def options_text(grid):
     names = bin_names(grid)
@@ -157,7 +154,6 @@ def paper_exemplars(ex, paper, pool, k):
     return out
 
 
-# ---- parsing ---------------------------------------------------------------
 
 def letter_probs(top_logprobs, letter_ids):
     """Normalised probabilities of the option letters from one position's top-k.
@@ -210,7 +206,6 @@ def load_embeddings(cfg, pool_rows, path):
     return E
 
 
-# ---- GPU stages ------------------------------------------------------------
 
 def chat(tok, message):
     from .probe import skip_thinking
@@ -314,7 +309,7 @@ def main():
         shown = shuffled_labels(labels, pool, ic["seed"]) if sel == "shuffled" else labels
         for k in args.k:
             if sel != "retrieved" and k == 0 and "retrieved" in args.selection:
-                continue  # k = 0 is the same prompt for every selection
+                continue
             if "question" in args.mode:
                 rows = run_questions(cfg, llm, pool_rows, ex, shown, k, grid)
                 for r in rows:

@@ -1,17 +1,4 @@
 #!/bin/bash
-# Hands-off follow-up for the Token Complexity GPU stages.
-# Usage: nohup bash slurm/autopilot_tc.sh selfalloc:65152 realbudget:65153 latency:65154 \
-#            > logs/autopilot.log 2>&1 &
-# Every 10 minutes, for each stage:
-#   PENDING / RUNNING          wait
-#   COMPLETED + output exists  done; after selfalloc, rerun plots (the score figure shows P5)
-#   FAILED / NODE_FAIL / OOM / BOOT_FAIL / PREEMPTED / COMPLETED without output
-#                              resubmit with the same time limit when a QOS slot is free
-#   TIMEOUT                    resubmit with twice the time limit (at most 24 h)
-#   CANCELLED                  left alone (cancelled by hand on purpose)
-# At most 2 resubmits per stage. When every stage is settled, writes a digest of the
-# results to logs/autopilot_results.txt and exits. Gives up after 5 days. Touches only
-# the jobs it was given or submitted itself.
 cd "$(dirname "$0")/.."
 MAX_RETRIES=2
 deadline=$(( $(date +%s) + 5 * 24 * 3600 ))
@@ -26,18 +13,18 @@ for arg in "$@"; do
 done
 log() { echo "$(date '+%F %T') $*"; }
 
-cpu() {   # run a CPU module in the project environment
+cpu() {
     ( source /users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh && conda activate baseenv \
       && export PYTHONPATH="$PWD/vendor:$PYTHONPATH" && python -m "$@" )
 }
 
-double_time() {   # HH:MM:SS -> twice as long, capped at 24:00:00
+double_time() {
     IFS=: read -r h m s <<<"$1"; t=$(( 2 * (10#$h * 3600 + 10#$m * 60 + 10#$s) ))
     [ $t -gt 86400 ] && t=86400
     printf '%02d:%02d:%02d' $((t / 3600)) $((t % 3600 / 60)) $((t % 60))
 }
 
-resubmit() {   # stage, time limit
+resubmit() {
     local s=$1 tl=$2
     if [ "$(squeue -u "$USER" -h | wc -l)" -ge 4 ]; then
         log "$s: waiting for a free submit slot"; return 1
@@ -49,7 +36,7 @@ resubmit() {   # stage, time limit
 }
 
 log "watching: $(for s in "${!JOB[@]}"; do printf '%s=%s ' "$s" "${JOB[$s]}"; done)"
-declare -A WANT    # stage -> time limit of a resubmit waiting for a slot
+declare -A WANT
 while true; do
     active=0
     for s in "${!JOB[@]}"; do

@@ -82,7 +82,6 @@ def run_prefix(cfg, llm, tok, rows_by_tier, ids):
     outs = llm.generate([r["prompt"] for r in jobs], params)
     res = []
     for r, o in zip(jobs, outs):
-        # both sides re-encoded from text, so a tokenizer round trip cannot fake a mismatch
         stored = tok.encode(r["full_output"], add_special_tokens=False)[: rc["prefix_cap"]]
         new = tok.encode(o.outputs[0].text, add_special_tokens=False)[: rc["prefix_cap"]]
         res.append({"id": r["id"], "tier": r["tier"], "cap": rc["prefix_cap"],
@@ -109,7 +108,7 @@ def run_prompted(cfg, llm, tok, pool, ids):
         if answer is not None and n_think <= B:
             pred, ok = grade(answer, it["gold"])
             rows.append({**row, "forced": False, "thinking": n_think, "pred": pred, "correct": ok})
-        else:   # still thinking at B: cut there and force the answer like tok_exam.curves
+        else:
             kept = tok.decode(ids_[:B]).split(THINK_CLOSE)[0]
             rows.append({**row, "forced": True, "thinking": min(B, n_think), "pred": None,
                          "correct": False})

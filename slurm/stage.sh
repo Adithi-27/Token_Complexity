@@ -1,6 +1,4 @@
 #!/bin/bash
-# One GPU stage after generation: sbatch --job-name=<name> slurm/stage.sh <module> [args]
-# e.g. sbatch slurm/stage.sh tok_exam.curves. Runs the CPU unit tests first.
 #SBATCH --job-name=tok_stage
 #SBATCH --account=cminds_anandi
 #SBATCH --partition=cn3_anandi
@@ -16,7 +14,7 @@
 set -e
 source "/users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh"
 conda activate baseenv
-export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home   # see slurm/generate.sh
+export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home
 export HF_HUB_OFFLINE=1
 export PYTHONPATH="$PWD/vendor_vllm:$PWD/vendor:$PYTHONPATH"
 export NCCL_P2P_DISABLE=1

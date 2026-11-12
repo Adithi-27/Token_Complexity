@@ -1,7 +1,4 @@
 #!/bin/bash
-# End-to-end pipeline test in one job (planning.md, step 6): 2 questions x 2 samples
-# per tier, then the sanity table and the budget sweep on those rows.
-# Usage: sbatch slurm/smoke.sh
 #SBATCH --job-name=tok_smoke
 #SBATCH --account=cminds_anandi
 #SBATCH --partition=cn3_anandi
@@ -17,7 +14,7 @@
 set -e
 source "/users/student/pg/pg25/adithi/miniconda3/etc/profile.d/conda.sh"
 conda activate baseenv
-export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home   # see slurm/generate.sh
+export HF_HOME=/janaki/backup/users/student/pg/pg25/adithi/hf_home
 export HF_HUB_OFFLINE=1
 export PYTHONPATH="$PWD/vendor_vllm:$PWD/vendor:$PYTHONPATH"
 export NCCL_P2P_DISABLE=1
